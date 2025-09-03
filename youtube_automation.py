@@ -676,12 +676,16 @@ async def main():
                 log_message("❌ No videos found. Please check your CSV file.")
                 return
             
-            # Get specific video choice (or all)
+            # Get specific video choice
             video_index = get_specific_video_choice(videos)
             if video_index != -1:
+                # Single selected video
                 selected_video = videos[video_index]
                 videos = [selected_video]
-            # else: keep full list as-is
+                process_all = False
+            else:
+                # User chose 'all' -> process entire CSV list
+                process_all = True
             
         else:  # update_type == 2
             # Fetch all videos from channel
@@ -690,6 +694,7 @@ async def main():
             if not videos:
                 log_message("❌ No videos found on your channel.")
                 return
+            process_all = True
         
         # Initialize browser for Gemini with your logged-in Chrome profiles
         log_message("🌐 Initializing browsers (even/odd profiles) for Gemini...")
@@ -706,14 +711,14 @@ async def main():
             )
             
             try:
-                if update_type == 1:  # Specific video → start first two automatically with stagger
-                    log_message("🎯 Specific mode selected → starting 2 videos automatically with 35s stagger...")
-                    first_two = videos[:2]
-                    await process_videos_staggered(first_two, fields_to_update, youtube_service, browser_even, browser_odd, stagger_seconds=35)
-                else:  # All videos
+                if process_all:
                     log_message("🔄 Processing all videos in staggered parallel mode (2 at a time)...")
                     await process_videos_staggered(videos, fields_to_update, youtube_service, browser_even, browser_odd, stagger_seconds=35)
                     log_message("✅ All videos processed!")
+                else:
+                    # Single selection
+                    log_message("🎯 Processing selected video...")
+                    await process_videos_staggered(videos, fields_to_update, youtube_service, browser_even, browser_odd, stagger_seconds=35)
             
             finally:
                 await browser_even.close()
