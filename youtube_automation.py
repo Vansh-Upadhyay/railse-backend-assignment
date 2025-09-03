@@ -8,7 +8,6 @@ import csv
 import asyncio
 import json
 import time
-import requests
 from googleapiclient.errors import HttpError
 from google.oauth2.credentials import Credentials
 from bs4 import BeautifulSoup
@@ -145,13 +144,10 @@ def fetch_all_channel_videos(youtube_service, max_results=50):
                 video_id = item['id']['videoId']
                 video_title = item['snippet']['title']
                 
-                # Test both URL formats to determine correct type
-                video_url = determine_video_url_type(video_id)
-                
-                if video_url:
-                    videos.append((str(len(videos) + 1), video_url))
-                    video_type = "Short" if "/shorts/" in video_url else "Regular"
-                    log_message(f"📹 Found video: {video_title} ({video_type})")
+                # Use standard watch?v format for all videos (works for both shorts and regular videos)
+                video_url = f"https://www.youtube.com/watch?v={video_id}"
+                videos.append((str(len(videos) + 1), video_url))
+                log_message(f"📹 Found video: {video_title}")
             
             # Check if there are more pages
             next_page_token = response.get('nextPageToken')
@@ -165,33 +161,7 @@ def fetch_all_channel_videos(youtube_service, max_results=50):
         log_message(f"❌ Error fetching channel videos: {e}")
         return []
 
-def determine_video_url_type(video_id: str) -> str:
-    """Determine if video is a Short or Regular by testing both URL formats"""
-    # Test both URL formats
-    shorts_url = f"https://www.youtube.com/shorts/{video_id}"
-    regular_url = f"https://www.youtube.com/watch?v={video_id}"
-    
-    # Test shorts URL first
-    try:
-        response = requests.head(shorts_url, timeout=10, allow_redirects=True)
-        if response.status_code == 200:
-            # Check if the final URL contains /shorts/ (not redirected to watch)
-            if "/shorts/" in response.url:
-                return shorts_url
-    except:
-        pass
-    
-    # Test regular URL
-    try:
-        response = requests.head(regular_url, timeout=10, allow_redirects=True)
-        if response.status_code == 200:
-            return regular_url
-    except:
-        pass
-    
-    # If both fail, default to regular URL format
-    log_message(f"⚠️ Could not determine video type for {video_id}, defaulting to regular format")
-    return regular_url
+
 
 def parse_duration_to_seconds(duration):
     """Parse YouTube duration format (PT1M30S) to seconds"""
