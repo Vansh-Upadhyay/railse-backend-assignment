@@ -482,20 +482,24 @@ def get_user_choice() -> Tuple[int, List[int]]:
     return choice, field_numbers
 
 def get_specific_video_choice(videos: List[Tuple[str, str]]) -> int:
-    """Get user choice for specific video"""
+    """Get user choice for specific video or 'all' to process all listed"""
     print(f"\n📋 Available videos ({len(videos)} total):")
     for i, (video_num, url) in enumerate(videos, 1):
         print(f"{i}. Video {video_num}: {url}")
     
     while True:
+        user_input = input(f"\nEnter video number (1-{len(videos)}) or 'all': ").strip()
+        # Accept 'all' (case-insensitive)
+        if user_input.lower() == "all":
+            return -1
         try:
-            choice = int(input(f"\nEnter video number (1-{len(videos)}): "))
+            choice = int(user_input)
             if 1 <= choice <= len(videos):
                 return choice - 1
             else:
-                print(f"❌ Please enter a number between 1 and {len(videos)}")
+                print(f"❌ Please enter a number between 1 and {len(videos)} or 'all'")
         except ValueError:
-            print("❌ Please enter a valid number")
+            print("❌ Please enter a valid number or 'all'")
 
 def format_description_for_youtube(raw_description: str) -> str:
     """Normalize spacing and newlines in description to improve readability.
@@ -672,10 +676,12 @@ async def main():
                 log_message("❌ No videos found. Please check your CSV file.")
                 return
             
-            # Get specific video choice
+            # Get specific video choice (or all)
             video_index = get_specific_video_choice(videos)
-            selected_video = videos[video_index]
-            videos = [selected_video]
+            if video_index != -1:
+                selected_video = videos[video_index]
+                videos = [selected_video]
+            # else: keep full list as-is
             
         else:  # update_type == 2
             # Fetch all videos from channel
